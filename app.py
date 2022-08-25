@@ -19,7 +19,9 @@ class Note(Base):
     position_y = Column(Integer, nullable=False, default=0)
     position_right = Column(Integer, nullable=False, default=100)
     position_bottom = Column(Integer, nullable=False, default=100)
-    # colour = Column(Integer, nullable=False, default=100)
+    background_red = Column(Integer, nullable=False, default=255)
+    background_green = Column(Integer, nullable=False, default=255)
+    background_blue = Column(Integer, nullable=False, default=255)
 
 engine = create_engine('sqlite:///notes.db')
 Base.metadata.create_all(engine)
@@ -44,7 +46,6 @@ class MainWindow(QMainWindow):
 
         font = QFont('Times', 18)
         self.editor.setFont(font)
-        self.fontSizeBox = QSpinBox()
         self.path = ""
         self.setCentralWidget(self.editor)
         self.setWindowTitle("Kira's Agenda")
@@ -59,17 +60,16 @@ class MainWindow(QMainWindow):
         self.editor.textChanged.connect(self.save)
 
         self.setGeometry(self.note.position_x, self.note.position_y, self.note.position_right, self.note.position_bottom)
-        # self.grip.move(self.note.position_right, self.note.position_bottom)
-        # self.move(self.note.position_x, self.note.position_y)
+        self.setStyleSheet(f'background-color: rgb({self.note.background_red}, {self.note.background_green}, {self.note.background_blue});')
 
 
     def load(self):
         # print(f"loading {self.note.text}")
-        self.editor.setMarkdown(self.note.text)
+        self.editor.setHtml(self.note.text)
         _ACTIVE_NOTES[self.note.id] = self
 
     def save(self):
-        self.note.text = self.editor.toMarkdown()
+        self.note.text = self.editor.toHtml()
         # print(f"SAVING:\n{self.note.text}\n")
         session.add(self.note)
         session.commit()
@@ -83,15 +83,15 @@ class MainWindow(QMainWindow):
     def create_tool_bar(self):
         toolbar = QToolBar()
 
-        # background_colour = QAction("colour", self)
-        # background_colour.setShortcut(QKeySequence("Ctrl+b"))
-        # background_colour.triggered.connect(self.setColour)
-        # self.addAction(background_colour)
+        background_colour = QAction("colour", self)
+        background_colour.setShortcut(QKeySequence("Ctrl+l"))
+        background_colour.triggered.connect(self.setBackgroundWindowColour)
+        self.addAction(background_colour)
 
-        # fonts = QAction("fonts", self)
-        # fonts.setShortcut(QKeySequence("Ctrl+t"))
-        # fonts.triggered.connect(self.setFonts)
-        # self.addAction(fonts)
+        font = QAction("font", self)
+        font.setShortcut(QKeySequence("Ctrl+t"))
+        font.triggered.connect(self.setFont)
+        self.addAction(font)
 
         boldBtn = QAction("bold", self)
         boldBtn.setShortcut(QKeySequence("Ctrl+b"))
@@ -108,37 +108,29 @@ class MainWindow(QMainWindow):
         italicBtn.triggered.connect(self.italicText)
         self.addAction(italicBtn)
 
-        italicBtn = QAction('text', self)
-        italicBtn.setShortcut(QKeySequence("Ctrl+t"))
-        italicBtn.triggered.connect(self.italicText)
-        self.addAction(italicBtn)
-
+        agendaAction = QAction('agenda dates', self)
+        agendaAction.setShortcut(QKeySequence("Ctrl+d"))
+        self.agenda = Agenda(self)
+        agendaAction.triggered.connect(self.agenda.show)
+        self.addAction(agendaAction)
 
         toolbar.setFixedHeight(10)
         self.addToolBar(toolbar)
-    #
-    # def displayWindowColourChoices(self):
-    #     pass
-    #
-    # def setWindowColourChoices(self):
-    #     pass
-    #
-    # def displayFontChoices(self):
-    #     self.fontBox = QComboBox(self)
-    #     self.fontBox.addItems(["Courier Std", "Hellentic Typewriter Regular", "Helvetica", "Arial", "SansSerif", "Helvetica", "Times", "Monospace"])
-    #     self.fontBox.activated.connect(self.setFont)
-    #     toolbar.addWidget(self.fontBox)
-    #
-    #     self.fontSizeBox.setValue(24)
-    #     self.fontSizeBox.valueChanged.connect(self.setFontSize)
-    #     toolbar.addWidget(self.fontSizeBox)
-    #
-    # def setFonts(self):
-    #     font = self.fontBox.currentText()
-    #     self.editor.setCurrentFont(QFont(font))
-    #
-    #     value = self.fontSizeBox.value()
-    #     self.editor.setFontPointSize(value)
+
+    def setBackgroundWindowColour(self):
+        self.colour = QColorDialog.getColor()
+        self.note.background_red = self.colour.red()
+        self.note.background_green = self.colour.green()
+        self.note.background_blue = self.colour.blue()
+        self.setStyleSheet(f'background-color: rgb({self.note.background_red}, {self.note.background_green}, {self.note.background_blue});')
+        self.save()
+
+    def setFont(self):
+        font, ok = QFontDialog.getFont()
+        self.editor.setCurrentFont(font)
+        # don't save because is in the text box
+
+        # self.editor.setFontPointSize(value)
 
     def italicText(self):
         state = self.editor.fontItalic()
@@ -186,6 +178,26 @@ class MainWindow(QMainWindow):
         self.save()
         self.close()
 
+class Agenda(QWidget):
+    def __init__(self, parent=None):
+        super(Agenda, self).__init__(parent=None)
+        self.parent = parent
+
+        self.setWindowTitle("Agenda View")
+        self.setWindowFlags(self.windowFlags() | Qt.FramelessWindowHint)
+        self.setStyleSheet(f'background-color: rgb({self.parent.note.background_red}, {self.parent.note.background_green}, {self.parent.note.background_blue});')
+        self.move(self.parent.note.position_x, self.parent.note.position_y)
+
+        self.button = QPushButton("done")
+        self.button.clicked.connect(self.close)
+
+        self.layout = QVBoxLayout()
+        message = QLabel("This is the agenda view\nDate 1\nDate2\nDate3")
+        self.layout.addWidget(message)
+        self.layout.addWidget(self.button)
+        self.setLayout(self.layout)
+
+
 app = QApplication(sys.argv)
 app.setApplicationName("Kira's agenda")
 app.setStyle("Fusion")
@@ -193,7 +205,7 @@ app.setStyle("Fusion")
 existing_note = session.query(Note).first()
 window = MainWindow(obj=existing_note)
 window.show()
-sys.exit(app.exec_())
+sys.exit(app.exec())
 
 
 # cal.parse("aug 31", datetime.datetime(2022, 8, 11, 0, 0, 0))
