@@ -19,6 +19,7 @@ class Note(Base):
     position_y = Column(Integer, nullable=False, default=0)
     position_right = Column(Integer, nullable=False, default=100)
     position_bottom = Column(Integer, nullable=False, default=100)
+    # colour = Column(Integer, nullable=False, default=100)
 
 engine = create_engine('sqlite:///notes.db')
 Base.metadata.create_all(engine)
@@ -64,11 +65,11 @@ class MainWindow(QMainWindow):
 
     def load(self):
         # print(f"loading {self.note.text}")
-        self.editor.setHtml(self.note.text)
+        self.editor.setMarkdown(self.note.text)
         _ACTIVE_NOTES[self.note.id] = self
 
     def save(self):
-        self.note.text = self.editor.toHtml()
+        self.note.text = self.editor.toMarkdown()
         # print(f"SAVING:\n{self.note.text}\n")
         session.add(self.note)
         session.commit()
@@ -82,10 +83,15 @@ class MainWindow(QMainWindow):
     def create_tool_bar(self):
         toolbar = QToolBar()
 
-        closeButton = QAction("bold", self)
-        closeButton.setShortcut(QKeySequence("Ctrl+k"))
-        closeButton.triggered.connect(self.closeApp)
-        self.addAction(closeButton)
+        # background_colour = QAction("colour", self)
+        # background_colour.setShortcut(QKeySequence("Ctrl+b"))
+        # background_colour.triggered.connect(self.setColour)
+        # self.addAction(background_colour)
+
+        # fonts = QAction("fonts", self)
+        # fonts.setShortcut(QKeySequence("Ctrl+t"))
+        # fonts.triggered.connect(self.setFonts)
+        # self.addAction(fonts)
 
         boldBtn = QAction("bold", self)
         boldBtn.setShortcut(QKeySequence("Ctrl+b"))
@@ -107,26 +113,33 @@ class MainWindow(QMainWindow):
         italicBtn.triggered.connect(self.italicText)
         self.addAction(italicBtn)
 
-        # self.fontBox = QComboBox(self)
-        # self.fontBox.addItems(["Courier Std", "Hellentic Typewriter Regular", "Helvetica", "Arial", "SansSerif", "Helvetica", "Times", "Monospace"])
-        # self.fontBox.activated.connect(self.setFont)
-        # toolbar.addWidget(self.fontBox)
-        #
-        # self.fontSizeBox.setValue(24)
-        # self.fontSizeBox.valueChanged.connect(self.setFontSize)
-        # toolbar.addWidget(self.fontSizeBox)
 
         toolbar.setFixedHeight(10)
         self.addToolBar(toolbar)
-        
-    def setFontSize(self):
-        value = self.fontSizeBox.value()
-        self.editor.setFontPointSize(value)
-        
-    def setFont(self):
-        font = self.fontBox.currentText()
-        self.editor.setCurrentFont(QFont(font))    
-        
+    #
+    # def displayWindowColourChoices(self):
+    #     pass
+    #
+    # def setWindowColourChoices(self):
+    #     pass
+    #
+    # def displayFontChoices(self):
+    #     self.fontBox = QComboBox(self)
+    #     self.fontBox.addItems(["Courier Std", "Hellentic Typewriter Regular", "Helvetica", "Arial", "SansSerif", "Helvetica", "Times", "Monospace"])
+    #     self.fontBox.activated.connect(self.setFont)
+    #     toolbar.addWidget(self.fontBox)
+    #
+    #     self.fontSizeBox.setValue(24)
+    #     self.fontSizeBox.valueChanged.connect(self.setFontSize)
+    #     toolbar.addWidget(self.fontSizeBox)
+    #
+    # def setFonts(self):
+    #     font = self.fontBox.currentText()
+    #     self.editor.setCurrentFont(QFont(font))
+    #
+    #     value = self.fontSizeBox.value()
+    #     self.editor.setFontPointSize(value)
+
     def italicText(self):
         state = self.editor.fontItalic()
         self.editor.setFontItalic(not(state)) 
@@ -181,3 +194,8 @@ existing_note = session.query(Note).first()
 window = MainWindow(obj=existing_note)
 window.show()
 sys.exit(app.exec_())
+
+
+# cal.parse("aug 31", datetime.datetime(2022, 8, 11, 0, 0, 0))
+# cal.parseDT("aug 31", datetime.datetime(2022, 8, 11, 0, 0, 0))
+# cal = pdt.Calendar()
