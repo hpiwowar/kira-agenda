@@ -93,6 +93,16 @@ class MainWindow(QMainWindow):
         font.triggered.connect(self.setFont)
         self.addAction(font)
 
+        fontBigger = QAction("fontBigger", self)
+        fontBigger.setShortcut(QKeySequence("Ctrl++"))
+        fontBigger.triggered.connect(self.setFontBigger)
+        self.addAction(fontBigger)
+
+        fontSmaller = QAction("fontSmaller", self)
+        fontSmaller.setShortcut(QKeySequence("Ctrl+-"))
+        fontSmaller.triggered.connect(self.setFontSmaller)
+        self.addAction(fontSmaller)
+
         boldBtn = QAction("bold", self)
         boldBtn.setShortcut(QKeySequence("Ctrl+b"))
         boldBtn.triggered.connect(self.boldText)
@@ -125,12 +135,15 @@ class MainWindow(QMainWindow):
         self.setStyleSheet(f'background-color: rgb({self.note.background_red}, {self.note.background_green}, {self.note.background_blue});')
         self.save()
 
+    def setFontBigger(self):
+        self.editor.setFontPointSize(self.editor.fontPointSize() + 1)
+
+    def setFontSmaller(self):
+        self.editor.setFontPointSize(self.editor.fontPointSize() - 1)
+
     def setFont(self):
         font, ok = QFontDialog.getFont()
         self.editor.setCurrentFont(font)
-        # don't save because is in the text box
-
-        # self.editor.setFontPointSize(value)
 
     def italicText(self):
         state = self.editor.fontItalic()
